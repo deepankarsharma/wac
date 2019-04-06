@@ -63,6 +63,8 @@ thunk.o: wa.h thunk.h
 wa.a: util.o thunk.o platform_$(PLATFORM).o
 wac: wa.a wac.o
 wace: wa.a wace.o
+wac-eps.o : wac-eps.c wa.h util.h  thunk.h platform.h
+wac-eps : wac-eps.o wa.a
 
 #
 # Platform
@@ -74,6 +76,9 @@ wac:
 wace: wace_emscripten.o
 	$(CC) -rdynamic -Wl,--no-as-needed -o $@ \
 	    -Wl,--start-group $^ -Wl,--end-group $(foreach l,$(WACE_LIBS),-l$(l))
+wac-eps:
+	$(CC) -rdynamic -Wl,--no-as-needed -o $@ \
+	    -Wl,--start-group $^ -Wl,--end-group $(foreach l,$(WAC_LIBS),-l$(l))
 
 else  # fooboot OS platform
 
