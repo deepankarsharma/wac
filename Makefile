@@ -7,7 +7,6 @@ PLATFORM = libc
 # WARNING: GPL license implications from using READLINE
 USE_READLINE ?=
 
-USE_SDL ?= 1
 
 #CFLAGS ?= -O2 -Wall -Werror -Wextra -MMD -MP
 CFLAGS ?= -O2 -Wall -Werror -MMD -MP

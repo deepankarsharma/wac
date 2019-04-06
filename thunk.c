@@ -19,7 +19,8 @@ void thunk_out(Module *m, uint32_t fidx) {
             warn("%s%s", value_repr(&m->stack[m->sp-p]), p ? " " : "");
         }
         warn("), %d results\n", type->result_count);
-        debug("      mask: 0x%x\n", type->mask);
+        //debug("      mask: 0x%x\n", type->mask);
+        debug("      mask: 0x%llx\n", type->mask);
     }
 
     switch (type->mask) {
@@ -82,7 +83,8 @@ void (*setup_thunk_in(uint32_t fidx))() {
     m->sp += type->param_count;
 
     if (TRACE) {
-        warn("  {{}} setup_thunk_in '%s', mask: 0x%x, ARGS FOR '>>' ARE BOGUS\n",
+        //warn("  {{}} setup_thunk_in '%s', mask: 0x%x, ARGS FOR '>>' ARE BOGUS\n",
+        warn("  {{}} setup_thunk_in '%s', mask: 0x%lluxx, ARGS FOR '>>' ARE BOGUS\n",
              func->export_name, type->mask);
     }
 

@@ -669,7 +669,8 @@ bool interpret(Module *m) {
             m->csp -= depth;
             // set to end for pop_block
             m->pc = m->callstack[m->csp].block->br_addr;
-            if (TRACE) { debug("      - to: 0x%x\n", &m->pc); }
+         //   if (TRACE) { debug("      - to: 0x%x\n", &m->pc); }
+            if (TRACE) { debug("      - to: 0x%x\n", m->pc); }
             continue;
         case 0x0d:  // br_if
             depth = read_LEB(bytes, &m->pc, 32);
@@ -1805,7 +1806,8 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
                         (uint32_t)(m->memory.pages*PAGE_SIZE));
                 }
                 info("  setting 0x%x bytes of memory at 0x%x + offset 0x%x\n",
-                     size, m->memory.bytes, offset);
+//                     size, m->memory.bytes, offset);
+                     size, (unsigned int) m->memory.bytes, offset);
                 memcpy(m->memory.bytes+offset, bytes+pos, size);
                 pos += size;
             }

@@ -5,15 +5,20 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+/*
 #define DEBUG 0
 #define INFO 0
 #define WARN 0
 #define TRACE 0
+*/
 
-//#define DEBUG 1
-//#define INFO 1
-//#define WARN 1
-//#define TRACE 1
+
+#define DEBUG 1
+#define INFO 1
+#define WARN 1
+#define TRACE 1
+
 
 #define FATAL(...) { \
     fprintf(stderr, "Error(%s:%d): ", __FILE__, __LINE__); \

@@ -161,7 +161,8 @@ int main(int argc, char **argv) {
         }
         Type *type = m->functions[fidx].type;
         parse_args(m, type, argc-optidx-1, argv+optidx+1);
-        warn("Running '%s' function 0x%x ('%s')\n", m->path, fidx, entry);
+       // warn("Running '%s' function 0x%x ('%s')\n", m->path, fidx, entry);
+        warn("Running '%s' function 0x%x ('%s')\n", m->path, fidx, argv[optidx]);
         res = invoke(m, fidx);
         if (res) {
             if (m->sp >= 0) {
