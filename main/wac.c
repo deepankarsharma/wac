@@ -155,7 +155,8 @@ int main(int argc, char **argv) {
    
     // setup argc/argv
     m->stack[++m->sp].value_type = I32;
-    m->stack[m->sp].value.uint32 = 361;
+    m->stack[m->sp].value.uint32 = 3; 
+    // m->stack[m->sp].value.uint32 = 361;  // mac result that fits to two bytes
 
 
     // Invoke main/_main function and exit
