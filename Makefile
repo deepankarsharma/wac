@@ -9,7 +9,7 @@ PROJECT_NAME := wac
 #COMPONENT_DIRS := main
 
 ifneq (,$(ESP_PLATFORM))
-  ESP_TARGET=ESP32
+  CFLAGS += -DESP_TARGET
   include $(IDF_PATH)/make/project.mk
 else
   ESP_TARGET=
@@ -48,7 +48,7 @@ out/%.a: main/%.o
 out/%.o: main/%.c
 	$(CC) -c $(filter %.c,$^) -o $@
 
-out/wac : ${(OBJ)}
+out/wac : $(OBJ)
 	$(CC) -rdynamic -Wl,--no-as-needed -o $@ -Wl,--start-group $^ -Wl,--end-group -lm 
 
 clean ::

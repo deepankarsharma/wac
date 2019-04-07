@@ -8,7 +8,7 @@
 #define WA_VERSION 0x01
 
 #ifdef LOW_MEMORY_CONFIG
-#define PAGE_SIZE       0x10000  // 65536
+#define PAGE_SIZE       16*1024  // WARN: is it ok to change page size (other than 64kB) ?
 #define STACK_SIZE      4*1024
 #define BLOCKSTACK_SIZE 4*1024
 #define CALLSTACK_SIZE  1024

@@ -284,6 +284,7 @@ uint64_t get_type_mask(Type *type) {
     return mask;
 }
 
+// FIXME: waisting 256Bytes!
 char _value_str[256];
 char *value_repr(StackValue *v) {
     switch (v->value_type) {
@@ -888,7 +889,7 @@ bool interpret(Module *m) {
                                         prev_pages*PAGE_SIZE,
                                         m->memory.pages*PAGE_SIZE,
                                         sizeof(uint32_t),
-                                        "Module->memory.bytes");
+                                        "grow_memory: Module->memory.bytes");
             continue;
 
         // Memory load operators
@@ -1447,6 +1448,7 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
     // Allocate the module
 #ifdef LOW_MEMORY_CONFIG
     warn("Using low memory configuration: sizeof(Module)=%ul.\n", (unsigned int) sizeof(Module));
+    dumpMemoryInfo();
 #endif
     m = acalloc(1, sizeof(Module), "Module");
     m->options = options;
@@ -1704,9 +1706,14 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
             // Allocate memory
             //for (uint32_t c=0; c<memory_count; c++) {
             parse_memory_type(m, &pos);
-            m->memory.bytes = acalloc(m->memory.pages*PAGE_SIZE,
-                                    sizeof(uint32_t),
-                                    "Module->memory.bytes");
+            debug("parse memory section: about to allocate %i pages, total size %i Bytes ... \n", (int) m->memory.pages, (int) m->memory.pages*PAGE_SIZE);
+            dumpMemoryInfo();
+            m->memory.bytes = acalloc(1,
+                                    m->memory.pages*PAGE_SIZE,
+                                    "parse memory section\n");
+            //m->memory.bytes = acalloc(m->memory.pages*PAGE_SIZE,
+            //                        sizeof(uint32_t),  // GGr: shoudn't this be bytes (means 1) ?!
+            //                        "parse memory section: Module->memory.bytes\n");
             //}
             break;
         case 6:

@@ -172,8 +172,8 @@ int main(int argc, char **argv) {
    
     // setup argc/argv
     m->stack[++m->sp].value_type = I32;
-    //m->stack[m->sp].value.uint32 = 3; 
-     m->stack[m->sp].value.uint32 = 361;  // mac result that fits to two bytes
+   m->stack[m->sp].value.uint32 = 3; 
+  //   m->stack[m->sp].value.uint32 = 361;  // mac result that fits to two bytes
 
 
     // Invoke main/_main function and exit
@@ -192,11 +192,26 @@ int main(int argc, char **argv) {
     }
 
     if (m->sp >= 0) {
-        value_repr(&m->stack[m->sp--]);
-        return 0;
+        StackValue *result = &m->stack[m->sp--];
+         switch (result->value_type) {
+            case I32: printf("I32 return value: 0x%x:i32",  result->value.uint32); break;
+            case I64: printf("I64 return value: 0x%llx:i64", result->value.uint64); break;
+            case F32: printf("F32 return value: %.7g:f32",  result->value.f32);    break;
+            case F64: printf("F64 return value: %.7g:f64",  result->value.f64);    break;
+        }
+        // value_repr(&m->stack[m->sp--]);
+        
     } else {
-        return 0;
+        printf("No result.\n");
     }
+    printf("\n\n ------ :-) DONE ------\n\n");
+#ifdef ESP_TARGET
+    printf("Restarting now.\n");
+    fflush(stdout);
+    esp_restart();
+#else
+    return 0;
+#endif
 }
 
 // entrypoint for ESP
