@@ -87,21 +87,6 @@ clean ::
 	    examples_wast/*.wasm
 endif
 
-##########################################################
-
-# Wast example build rules
-examples_wast/%.wasm: examples_wast/%.wast
-	wasm-as $< -o $@
 
 
-# General C example build rules
-examples_c/%.wasm: examples_c/%.c
-	$(EMCC) -I examples_c/include -s USE_SDL=2 $< -o $@
-
-.SECONDARY:
-examples_c/%.wast: examples_c/%.wasm
-	wasm-dis $< -o $@
-
-examples_c/%: examples_c/%.c
-	$(CC) $< -o $@ -lSDL2 -lSDL2_image -lGL -lglut
 
