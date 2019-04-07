@@ -1445,6 +1445,9 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
     Module   *m;
 
     // Allocate the module
+#ifdef LOW_MEMORY_CONFIG
+    warn("Using low memory configuration: sizeof(Module)=%ul.\n", (unsigned int) sizeof(Module));
+#endif
     m = acalloc(1, sizeof(Module), "Module");
     m->options = options;
 
@@ -1550,6 +1553,7 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
                 void *val;
                 char *err, *sym = malloc(module_len + field_len + 5);
 
+/*
                 do {
                     // Try using module as handle filename
                     if (resolvesym(import_module, import_field, &val, &err)) { break; }
@@ -1578,10 +1582,11 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
 
                     FATAL("Error: %s\n", err);
                 } while(false);
-
-                debug("  found '%s.%s' as symbol '%s' at address %p\n",
-                      import_module, import_field, sym, val);
+                */
+                sprintf(sym, "%s", import_field);
+                FATAL("Error: wac's functinality to load import function from DLL has been removed. %s\n", err);              
                 free(sym);
+                exit(-1);
 
                 // Store in the right place
                 switch (external_kind) {

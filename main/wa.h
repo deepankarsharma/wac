@@ -7,11 +7,19 @@
 #define WA_MAGIC   0x6d736100
 #define WA_VERSION 0x01
 
+#ifdef LOW_MEMORY_CONFIG
+#define PAGE_SIZE       0x10000  // 65536
+#define STACK_SIZE      4*1024
+#define BLOCKSTACK_SIZE 4*1024
+#define CALLSTACK_SIZE  1024
+#define BR_TABLE_SIZE   4*1024
+#else
 #define PAGE_SIZE       0x10000  // 65536
 #define STACK_SIZE      0x10000  // 65536
 #define BLOCKSTACK_SIZE 0x1000   // 4096
 #define CALLSTACK_SIZE  0x1000   // 4096
 #define BR_TABLE_SIZE   0x10000  // 65536
+#endif
 
 #define I32       0x7f  // -0x01
 #define I64       0x7e  // -0x02

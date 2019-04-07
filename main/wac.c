@@ -1,3 +1,11 @@
+
+#ifdef ESP_TARGET
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_spi_flash.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -9,7 +17,6 @@
 // Call table/trapping table lookups/execution
 #include <unistd.h>
 #include <signal.h>
-#include <sys/mman.h>
 
 #include "util.h"
 #include "platform.h"
@@ -71,9 +78,15 @@ const char* wasi_test_wasm_funcs[] = {
 /////////////////////////////////////////////////////////
 // memory layout
 
+#ifdef LOW_MEMORY_CONFIG
+#define PAGE_COUNT   1     // 64K each
+#define TOTAL_PAGES  1
+#define TABLE_COUNT  2
+#else
 #define PAGE_COUNT   1     // 64K each
 #define TOTAL_PAGES  0x100000 / PAGE_SIZE   // use 1MByte of memory
 #define TABLE_COUNT  20
+#endif
 
 Memory _env__memory_ = {
     PAGE_COUNT,  // initial size (64K pages)
@@ -107,9 +120,13 @@ void init_wac_eps() {
     *_env__DYNAMICTOP_PTR_ = (uint32_t*)(_env__memoryBase_ + PAGE_COUNT * PAGE_SIZE);
 
     // This arrangement correlates to the module mangle_table_offset option
-    if (posix_memalign((void **)&_env__table_.entries, sysconf(_SC_PAGESIZE),
-                       TABLE_COUNT*sizeof(uint32_t))) {
-        perror("posix_memalign");
+//    if (posix_memalign((void **)&_env__table_.entries, sysconf(_SC_PAGESIZE),
+//                       TABLE_COUNT*sizeof(uint32_t))) {
+//            perror("posix_memalign");
+  _env__table_.entries = malloc(TABLE_COUNT*sizeof(uint32_t));
+    if (_env__table_.entries == NULL) {
+      //
+        perror("init_wac_eps: malloc(tablecount....)");
         exit(1);
     }
     _env__tableBase_ = _env__table_.entries;
@@ -155,8 +172,8 @@ int main(int argc, char **argv) {
    
     // setup argc/argv
     m->stack[++m->sp].value_type = I32;
-    m->stack[m->sp].value.uint32 = 3; 
-    // m->stack[m->sp].value.uint32 = 361;  // mac result that fits to two bytes
+    //m->stack[m->sp].value.uint32 = 3; 
+     m->stack[m->sp].value.uint32 = 361;  // mac result that fits to two bytes
 
 
     // Invoke main/_main function and exit
@@ -180,5 +197,9 @@ int main(int argc, char **argv) {
     } else {
         return 0;
     }
+}
 
+// entrypoint for ESP
+void app_main() {
+    main(0, NULL);
 }

@@ -9,17 +9,21 @@ PROJECT_NAME := wace
 COMPONENT_DIRS := main
 
 ifneq (,$(ESP_PLATFORM))
+  ESP_TARGET=ESP32
   include $(IDF_PATH)/make/project.mk
+else
+  ESP_TARGET=
 endif
 
 # libc or fooboot
 PLATFORM = libc
 
-# WARNING: GPL license implications from using READLINE
-USE_READLINE ?=
-
 #CFLAGS ?= -O2 -Wall -Werror -Wextra -MMD -MP
 CFLAGS += -O2 -Wall -Werror -MMD -MP -DPLATFORM=1
+
+# enable this define to compile with low memory profile that fits to ESP32 dev board.
+# this config can also be used for testing purposes on Linux
+CFLAGS += -DLOW_MEMORY_CONFIG
 
 
 ifeq (,$(ESP_PLATFORM))
@@ -45,7 +49,7 @@ out/%.o: main/%.c
 	$(CC) -c $(filter %.c,$^) -o $@
 
 out/wac : ${(OBJ)}
-	$(CC) -rdynamic -Wl,--no-as-needed -o $@ -Wl,--start-group $^ -Wl,--end-group -lm -ldl
+	$(CC) -rdynamic -Wl,--no-as-needed -o $@ -Wl,--start-group $^ -Wl,--end-group -lm 
 
 clean ::
 	rm -f out/* examples_wast/*.wasm
