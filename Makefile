@@ -4,9 +4,9 @@
 # 'main' component has a special meaning.
 #
 
-PROJECT_NAME := wace
+PROJECT_NAME := wac
 
-COMPONENT_DIRS := main
+#COMPONENT_DIRS := main
 
 ifneq (,$(ESP_PLATFORM))
   ESP_TARGET=ESP32

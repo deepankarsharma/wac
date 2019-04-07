@@ -1551,7 +1551,8 @@ Module *load_module(uint8_t *bytes, uint32_t byte_count, Options options) {
                 }
 
                 void *val;
-                char *err, *sym = malloc(module_len + field_len + 5);
+                char *err = NULL;
+                char  *sym = malloc(module_len + field_len + 5);
 
 /*
                 do {

@@ -13,3 +13,7 @@ wabt/
 
 boot.iso
 isodir/
+build/
+out/
+.vscode/
+sdkconfig.old
