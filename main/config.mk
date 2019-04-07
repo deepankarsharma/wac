@@ -1,17 +1,3 @@
-#
-# Per ESP-IF convention, the  Makefile must reside in the priject base directory
-# but all c/h source code files are in 'component' directories, of whihc
-# 'main' component has a special meaning.
-#
-
-PROJECT_NAME := wace
-
-COMPONENT_DIRS := main
-
-ifneq (,$(ESP_PLATFORM))
-include $(IDF_PATH)/make/project.mk
-endif
-
 ##########################################################
 # User configurable build options
 
@@ -23,14 +9,16 @@ USE_READLINE ?=
 
 
 #CFLAGS ?= -O2 -Wall -Werror -Wextra -MMD -MP
-CFLAGS += -O2 -Wall -Werror -MMD -MP
+CFLAGS ?= -O2 -Wall -Werror -MMD -MP
+
+EXTRA_WAC_LIBS ?=
+EXTRA_WACE_LIBS ?=
 
 
 ##########################################################
 
-ifeq (,$(ESP_PLATFORM))
 CC = gcc $(CFLAGS) -std=gnu99 -m32 -g
-endif
+EMCC = emcc $(CFLAGS) -s WASM=1 -s SIDE_MODULE=1 -s LEGALIZE_JS_FFI=0
 
 WA_DEPS = util.o thunk.o
 
@@ -55,22 +43,28 @@ else
 endif
 endif
 
+WAC_LIBS += $(EXTRA_WAC_LIBS)
+WACE_LIBS += $(EXTRA_WACE_LIBS)
 
 # Basic build rules
-all: wac
+.PHONY:
+all: wac wace
 
-out/%.a: main/%.o
+%.a: %.o
 	ar rcs $@ $^
 
-out/%.o: main/%.c
+%.o: %.c
 	$(CC) -c $(filter %.c,$^) -o $@
 
 # Additional dependencies
-out/util.o: main/util.h
-out/wa.o: main/wa.h main/util.h main/platform.h
-out/thunk.o: main/wa.h main/thunk.h
-out/wa.a: out/util.o out/thunk.o out/platform.o
-out/wac: out/wa.a out/wac.o
+util.o: util.h
+wa.o: wa.h util.h platform.h
+thunk.o: wa.h thunk.h
+wa.a: util.o thunk.o platform_$(PLATFORM).o
+wac: wa.a wac.o
+wace: wa.a wace.o
+wac-eps.o : wac-eps.c wa.h util.h  thunk.h platform.h
+wac-eps : wac-eps.o wa.a
 
 #
 # Platform
@@ -79,13 +73,29 @@ ifeq (libc,$(PLATFORM)) # libc Platform
 wac:
 	$(CC) -rdynamic -Wl,--no-as-needed -o $@ \
 	    -Wl,--start-group $^ -Wl,--end-group $(foreach l,$(WAC_LIBS),-l$(l))
+wace: wace_emscripten.o
+	$(CC) -rdynamic -Wl,--no-as-needed -o $@ \
+	    -Wl,--start-group $^ -Wl,--end-group $(foreach l,$(WACE_LIBS),-l$(l))
+wac-eps:
+	$(CC) -rdynamic -Wl,--no-as-needed -o $@ \
+	    -Wl,--start-group $^ -Wl,--end-group $(foreach l,$(WAC_LIBS),-l$(l))
+
+else  # fooboot OS platform
+
+  FOO_TARGETS = wac wace
+  include fooboot/Makefile
+
+wace: wace_fooboot.o
 endif
 
-ifeq (,$(ESP_PLATFORM))
-clean ::
-	rm -f out/* \
+
+.PHONY:
+clean::
+	rm -f *.o *.a *.d wac wace wace-sdl.c \
+	    lib/*.o lib/*.d kernel/*.o kernel/*.d \
+	    examples_c/*.js examples_c/*.html \
+	    examples_c/*.wasm examples_c/*.wast \
 	    examples_wast/*.wasm
-endif
 
 ##########################################################
 
