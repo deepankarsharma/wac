@@ -6,7 +6,8 @@ specification.
 
 This is a fork of the great works at **kanaka/wac** focuses on making the
 WASM Interpreter work on embedded devices compatible with 
-Espressif ESP32 and their ESP-IF development environment.
+Espressif ESP32 and their ESP-IF development environment. This environment 
+uses Amazon FreeRTOS.
 
 Please read the intro at kanaka/wac .
 
