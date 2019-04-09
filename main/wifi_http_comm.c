@@ -24,8 +24,12 @@
 #include <esp_system.h>
 #include <nvs_flash.h>
 #include <sys/param.h>
+#include <malloc.h>
+#include "wpa2/utils/base64.h"
 
 #include <esp_http_server.h>
+
+#include "wifi_http_comm.h"
 
 /*
  * We use simple WiFi configuration that you can set via
@@ -41,6 +45,11 @@ static const char *TAG = "WIFI_HTTP_COMM";
 
 // singleton handle on the HTTP server instance
 httpd_handle_t server = NULL;
+
+// the handler function that should be called once a WASM module
+// has been received and should be loaded to the Interpreter
+wasmLoader_t moduleLoaderHandlerFunc = NULL;
+
 
 /* This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
@@ -58,6 +67,81 @@ esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "WAC API - 404 not found error ");
     return ESP_FAIL;
 }
+
+// FIXME
+extern void parseAndRunWasm(unsigned char *bytes, size_t byte_count);
+
+/* 
+  HTTP POST handler
+  receives a Binary WASM file from a client 
+*/
+esp_err_t wasm_post_handler(httpd_req_t *req)
+{
+    if (req->content_len <= 0)
+    {
+        ESP_LOGW(TAG, "wasm_post_handler: missing or invalid Content-Length.");
+
+        /* send HTTP 411 Length Required response */
+        httpd_resp_send_err(req, 411, "WAC API - 411 Content-Length missing!");
+        return ESP_FAIL;
+    }
+
+    ESP_LOGI(TAG, "wasm_post_handler: %i Bytes of base64 encoded WASM to be received ....",
+             req->content_len);
+
+    void *wasm_base64 = malloc(req->content_len);
+    char buf[100];
+    size_t ret = 0;
+    int remaining = req->content_len;
+
+    while (remaining > 0)
+    {
+        /* Read the data for the request */
+        if ((ret = httpd_req_recv(req, buf,
+                                  MIN(remaining, sizeof(buf)))) <= 0)
+        {
+            if (ret == HTTPD_SOCK_ERR_TIMEOUT)
+            {
+                /* Retry receiving if timeout occurred */
+                continue;
+            }
+            return ESP_FAIL;
+        }
+        ESP_LOGI(TAG, " .%i ", (int)ret);
+        memcpy((void *)(wasm_base64 + req->content_len - remaining), (void *)buf, ret);
+        remaining -= ret;
+    }
+
+    ESP_LOGI(TAG, "decoding base64");
+    size_t decoded_length;
+    unsigned char *wasm_binary = base64_decode(wasm_base64, req->content_len, &decoded_length);
+    free(wasm_base64);
+
+    ESP_LOGI(TAG, "Decoding done, received %iBytes binary WASM", (int)decoded_length);
+
+    // The following code line sends the binary WASM code back to the client
+    // this can be useful to verify uploading and base64 decoding work ok.
+    //httpd_resp_send(req, (char *)wasm_binary, decoded_length);
+
+    /* Send back simple reply */
+    char *msg = "OK";
+    httpd_resp_send(req, msg, strlen(msg));
+
+    (*moduleLoaderHandlerFunc)((unsigned char *)wasm_binary, decoded_length);
+
+    // End response
+    httpd_resp_send(req, NULL, 0);
+    return ESP_OK;
+}
+
+httpd_uri_t route_run =
+    {
+        .uri = "/run",
+        .method = HTTP_POST,
+        .handler = wasm_post_handler,
+        .user_ctx = NULL
+    };
+
 
 /* HTTP handler function for URL /hello
    its sole purpose is to make a friendly server
@@ -142,12 +226,12 @@ esp_err_t hello_get_handler(httpd_req_t *req)
      * string passed in user context*/
     const char *resp_str = (const char *)"Hi, this is WAC, a Web Assembly interpreter!";
     httpd_resp_send(req, resp_str, strlen(resp_str));
-    
+
     ESP_LOGI(TAG, "hello_get_handler: ... DONE");
     return ESP_OK;
 }
 
-httpd_uri_t hello = {
+httpd_uri_t route_hello = {
     .uri = "/hello",
     .method = HTTP_GET,
     .handler = hello_get_handler,
@@ -166,7 +250,8 @@ bool start_webserver(void)
     {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &hello);
+        httpd_register_uri_handler(server, &route_hello);
+        httpd_register_uri_handler(server, &route_run);
         return true;
     }
 
@@ -177,7 +262,8 @@ bool start_webserver(void)
 
 void stop_webserver(httpd_handle_t server)
 {
-    if (server == NULL) return;
+    if (server == NULL)
+        return;
 
     // Stop the httpd server
     httpd_stop(server);
@@ -200,10 +286,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
                  ip4addr_ntoa(&event->event_info.got_ip.ip_info.ip));
 
         /* Start the web server */
-       // if (*server == NULL)
-       // {
-            start_webserver();
-       // }
+        // if (*server == NULL)
+        // {
+        start_webserver();
+        // }
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
         ESP_LOGI(TAG, "SYSTEM_EVENT_STA_DISCONNECTED");
@@ -222,13 +308,15 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-void initialise_wifi(void *arg)
+void initialiseWifiAndStartServer(wasmLoader_t moduleLoaderHandlerFunc1)
 {
     // non-volatile storrage library (seems needed by Wifi)
     ESP_ERROR_CHECK(nvs_flash_init());
 
+    moduleLoaderHandlerFunc = moduleLoaderHandlerFunc1;
+
     tcpip_adapter_init();
-    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, arg));
+    ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, NULL));
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));

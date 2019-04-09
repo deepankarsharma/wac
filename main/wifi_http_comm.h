@@ -3,7 +3,9 @@
 
 #define WIFI_HTTP_H
 
-void initialise_wifi(void *arg)
+typedef void (*wasmLoader_t) (unsigned char* wasmBytes, size_t wasmLength);
+
+void initialiseWifiAndStartServer(wasmLoader_t moduleLoaderHandlerFunc)
 #ifdef ESP_TARGET
 ;
 #else
