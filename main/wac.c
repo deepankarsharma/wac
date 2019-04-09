@@ -23,6 +23,8 @@
 #include "wa.h"
 #include "thunk.h"
 
+#include "wifi_http_comm.h"
+
 // WASM test files
 
 unsigned char arith_wasm[] = {
@@ -73,6 +75,7 @@ const char* wasi_test_wasm_funcs[] = {
     "fib",
     "fibRec"
 };
+
 
 
 /////////////////////////////////////////////////////////
@@ -216,5 +219,7 @@ int main(int argc, char **argv) {
 
 // entrypoint for ESP
 void app_main() {
-    main(0, NULL);
+   //main(0, NULL);
+
+   initialise_wifi(NULL);
 }
