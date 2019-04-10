@@ -36,8 +36,8 @@ out/util.o: main/util.h
 out/wa.o: main/wa.h main/util.h main/platform.h 
 out/thunk.o: main/wa.h main/thunk.h
 out/platform.o: main/platform.h main/util.h
-out/wifi_http_comm.o: out/wifi_http_comm.h
-out/wac.o: main/wac.h main/util.h main/platform.h main/wa.h
+out/wifi_http_comm.o: out/wifi_http_comm.h main/event_source.h
+out/wac.o: main/wac.h main/util.h main/platform.h main/wa.h main/event_source.h
 
 ifeq (,$(ESP_PLATFORM))
 

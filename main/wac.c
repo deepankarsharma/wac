@@ -22,6 +22,7 @@
 #include "platform.h"
 #include "wa.h"
 #include "thunk.h"
+#include "event_source.h"
 
 #include "wifi_http_comm.h"
 
@@ -199,8 +200,21 @@ void parseAndRunWasm(unsigned char *bytes, size_t byte_count)
     printf("\n\n ------ :-) DONE ------\n\n");
 }
 
-/////////////////////////////////////////////////////////
-// Command line
+
+void moduleLoaderHandlerFunc (void *event_handler_arg, 
+    esp_event_base_t event_base, 
+    int32_t event_id, 
+    void *event_data) {
+        
+    ESP_ERROR_CHECK(event_base != WAC_HTTPD_EVENTS);
+    ESP_ERROR_CHECK(event_id != WAC_HTTPD_INIT_MODULE_EVENT);
+
+   // wac_httpd_init_module_event_data_t* args =
+   // (wac_httpd_init_module_event_data_t *) event_handler_arg ;
+
+  parseAndRunWasm((unsigned char *) event_data, 250);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -219,6 +233,6 @@ int main(int argc, char **argv)
 // entrypoint for ESP
 void app_main()
 {
-   initialiseWifiAndStartServer(parseAndRunWasm);
+   initialiseWifiAndStartServer(moduleLoaderHandlerFunc);
    init_wac_eps();
 }

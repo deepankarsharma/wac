@@ -29,6 +29,7 @@
 
 #include <esp_http_server.h>
 
+#include "event_source.h"
 #include "wifi_http_comm.h"
 
 /*
@@ -46,10 +47,11 @@ static const char *TAG = "WIFI_HTTP_COMM";
 // singleton handle on the HTTP server instance
 httpd_handle_t server = NULL;
 
-// the handler function that should be called once a WASM module
-// has been received and should be loaded to the Interpreter
-wasmLoader_t moduleLoaderHandlerFunc = NULL;
+ESP_EVENT_DEFINE_BASE(WAC_HTTPD_EVENTS)
 
+// wac_httpd_init_module_event_data_t wac_httpd_init_module_event_data;
+
+//const char * WAC_HTTPD_EVENTS = "WAC_HTTPD_EVENTS";
 
 /* This handler allows the custom error handling functionality to be
  * tested from client side. For that, when a PUT request 0 is sent to
@@ -127,10 +129,17 @@ esp_err_t wasm_post_handler(httpd_req_t *req)
     char *msg = "OK";
     httpd_resp_send(req, msg, strlen(msg));
 
-    (*moduleLoaderHandlerFunc)((unsigned char *)wasm_binary, decoded_length);
+    ESP_ERROR_CHECK(esp_event_post(
+        WAC_HTTPD_EVENTS,
+        WAC_HTTPD_INIT_MODULE_EVENT,
+        (unsigned char *)wasm_binary,
+        decoded_length,
+        portMAX_DELAY // number of ticks to block on a full event queue
+        ));
 
     // End response
     httpd_resp_send(req, NULL, 0);
+
     return ESP_OK;
 }
 
@@ -139,9 +148,7 @@ httpd_uri_t route_run =
         .uri = "/run",
         .method = HTTP_POST,
         .handler = wasm_post_handler,
-        .user_ctx = NULL
-    };
-
+        .user_ctx = NULL};
 
 /* HTTP handler function for URL /hello
    its sole purpose is to make a friendly server
@@ -308,12 +315,19 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-void initialiseWifiAndStartServer(wasmLoader_t moduleLoaderHandlerFunc1)
+void initialiseWifiAndStartServer(esp_event_handler_t moduleLoaderHandlerFunc)
 {
     // non-volatile storrage library (seems needed by Wifi)
     ESP_ERROR_CHECK(nvs_flash_init());
 
-    moduleLoaderHandlerFunc = moduleLoaderHandlerFunc1;
+    // Create the default event loop
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    ESP_ERROR_CHECK(esp_event_handler_register(
+        WAC_HTTPD_EVENTS,
+        WAC_HTTPD_INIT_MODULE_EVENT,
+        moduleLoaderHandlerFunc,
+        NULL));
 
     tcpip_adapter_init();
     ESP_ERROR_CHECK(esp_event_loop_init(wifi_event_handler, NULL));
@@ -329,5 +343,6 @@ void initialiseWifiAndStartServer(wasmLoader_t moduleLoaderHandlerFunc1)
     ESP_LOGI(TAG, "Setting WiFi configuration SSID %s...", wifi_config.sta.ssid);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+
     ESP_ERROR_CHECK(esp_wifi_start());
 }
